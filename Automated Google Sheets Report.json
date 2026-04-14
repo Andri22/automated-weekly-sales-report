@@ -1,0 +1,151 @@
+{
+  "name": "Automated Google Sheets Report",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "9f75d890-48e4-49b3-bcb5-0792eb7b8e1a",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aCHBU2fA8inYcWlvhJ6kzU48DvEQGkSGhxVKs6nibi4",
+          "mode": "list",
+          "cachedResultName": "Weekly Sales Data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aCHBU2fA8inYcWlvhJ6kzU48DvEQGkSGhxVKs6nibi4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aCHBU2fA8inYcWlvhJ6kzU48DvEQGkSGhxVKs6nibi4/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "e813e2ba-2721-4776-9bcf-56a47a8bb77a",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IGh2caTpF1fSJ6od",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst rows = items.map(i => i.json);\n\n// Calculate totals\nconst closedRows = rows.filter(r => r['Status'] === 'Closed');\nconst totalRevenue = closedRows.reduce((sum, r) => sum + parseFloat(r['Revenue (USD)'] || 0), 0);\nconst totalUnits = closedRows.reduce((sum, r) => sum + parseInt(r['Units Sold'] || 0), 0);\n\n// Revenue per salesperson\nconst byPerson = {};\nclosedRows.forEach(r => {\n  const name = r['Salesperson'];\n  if (!byPerson[name]) byPerson[name] = 0;\n  byPerson[name] += parseFloat(r['Revenue (USD)'] || 0);\n});\n\n// Build leaderboard string\nconst leaderboard = Object.entries(byPerson)\n  .sort((a, b) => b[1] - a[1])\n  .map(([name, rev]) => `  ${name}: $${rev.toFixed(2)}`)\n  .join('\\n');\n\n// Build final report\nconst report = `📊 WEEKLY SALES REPORT\n━━━━━━━━━━━━━━━━━━━━\n✅ Closed Deals   : ${closedRows.length}\n📦 Total Units    : ${totalUnits}\n💰 Total Revenue  : $${totalRevenue.toFixed(2)}\n\n🏆 Top Performers:\n${leaderboard}\n\nGenerated: ${new Date().toDateString()}`;\n\nreturn [{ json: { report } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "10c46e1b-a017-4ae4-8b8d-1985236cb646",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "chatId": "-1003764865065",
+        "text": "={{ $json.report }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "bd5a66f3-9877-4833-925d-4be2ebcfe4e3",
+      "name": "Send a text message",
+      "webhookId": "d32e9477-006f-4935-9fc4-fd3d4c7c20f2",
+      "credentials": {
+        "telegramApi": {
+          "id": "U0dhh7DiclrgLWZb",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "e4e748bc-839b-4734-a3d8-7231b52ea440",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ea818ed27e80d1f96ce51e76dd5b8d9538de3144aa5c0a44aacc90d1d31c2dd6"
+  },
+  "id": "32qOzU_uVxYWVFVydUAGS",
+  "tags": []
+}
