@@ -33,3 +33,6 @@ performance reports without manual data compilation.
 ## Result
 - 45 minutes of manual work eliminated per week
 - Report delivered every Monday at 8am without fail
+
+## Additional Features
+- Automatic error monitoring with Telegram alerts
